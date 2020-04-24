@@ -14,6 +14,28 @@ namespace ApplicationCore.Service
         {
             _db = db;
         }
+
+        public bool EditUser(User user)
+        {
+            try
+            {
+                _db.Users.Update(user);
+                _db.SaveChanges();
+                return true;
+            }
+            catch (Exception)
+            {
+
+                return false;
+            }
+           
+        }
+
+        public User GetById(Guid id)
+        {
+            return _db.Users.Where(u => u.Id == id).FirstOrDefault();
+        }
+
         public List<User> GetUsers()
         {
             var users = _db.Users.ToList();

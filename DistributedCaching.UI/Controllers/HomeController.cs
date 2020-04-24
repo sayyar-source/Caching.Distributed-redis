@@ -11,53 +11,69 @@ using DistributedCaching.Infrastructure.Data;
 using Microsoft.Extensions.Caching.Distributed;
 using Newtonsoft.Json;
 using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DistributedCaching.UI.Controllers
 {
+    [ApiController]
+    [Route("[controller]")]
     public class HomeController : Controller
     {
-       private readonly IUserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IProductRepository _productRepository;
-        private IDistributedCache _distributedCache;
-        public HomeController(IUserRepository userRepository, IProductRepository productRepository, IDistributedCache distributedCache)
+        //private IDistributedCache _distributedCache;
+        private readonly IMemoryCache _memoryCache;
+        public HomeController(IUserRepository userRepository, IProductRepository productRepository, IMemoryCache memoryCache)
         {
             _userRepository = userRepository;
             _productRepository = productRepository;
-            _distributedCache = distributedCache;
+            _memoryCache = memoryCache;
         }
         public IActionResult Index()
         {
-           List<Product> products=null;
-            var cachedProduct = _distributedCache.Get("product");//cache_product
 
-            if (cachedProduct==null)
-            {
-                 products = GetProducts();
-                var stringproduct = JsonConvert.SerializeObject(products);
-                var bytes = Encoding.UTF8.GetBytes(stringproduct);
-                _distributedCache.Set("product", bytes
-                    , new DistributedCacheEntryOptions
-                    {
-                        AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(500)
-                    });
-                return Ok(products);
+            return View();
+
+        }
+        [HttpPost("edituser")]
+        public IActionResult EditUser(User user)
+        {
+            user.Id =Guid.Parse("0e45873d-3da2-4775-8cb5-08d7e850c7c4");
+            //update cache
+            IList<User> cachedUsers;
+            List<User> usersList = new List<User>();
+            if (_memoryCache.TryGetValue("users", out cachedUsers))
+                {
+                var editUser = cachedUsers.FirstOrDefault(u => u.Id == user.Id);
+                editUser.PhoneNumber = user.PhoneNumber;
+                editUser.Password = user.Password;
+                usersList.Add(editUser);
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                     .SetPriority(CacheItemPriority.NeverRemove)
+                     .SetAbsoluteExpiration(TimeSpan.FromDays(1));
+                //.SetSlidingExpiration(TimeSpan.FromSeconds(3))
+                // .RegisterPostEvictionCallback(UsersCacheEvicted);
+                _memoryCache.Set("users", usersList, cacheEntryOptions);
+               
             }
             else
             {
-                var bytesAsString = Encoding.UTF8.GetString(cachedProduct);
-                products = JsonConvert.DeserializeObject<List<Product>>(bytesAsString);
-                return Ok(products);
-            }
-       
+                var editUser = _userRepository.GetById(user.Id);
+                usersList.Add(editUser);
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetPriority(CacheItemPriority.NeverRemove)
+                    .SetAbsoluteExpiration(TimeSpan.FromDays(1));
             
-        }
-        public List<Product> GetProducts()
-        {
-           var list= _productRepository.GetProducts();
-            return list;
-        }
-      
+                _memoryCache.Set("users", usersList, cacheEntryOptions);
+            }
+            // update database
+            _userRepository.EditUser(user);
+            return RedirectToAction("Index");
 
-        
+        }
+
+
+
+
     }
 }

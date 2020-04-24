@@ -27,6 +27,7 @@ namespace DistributedCaching.UI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddMemoryCache();
             services.AddControllersWithViews();
             services.AddDbContext<DatabaseContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("Connection")));
@@ -37,6 +38,8 @@ namespace DistributedCaching.UI
                 options.Configuration = "localhost";
                 options.InstanceName = "cache_";
             });
+           
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

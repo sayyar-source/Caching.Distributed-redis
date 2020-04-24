@@ -8,5 +8,7 @@ namespace ApplicationCore.Interfaces
    public interface IUserRepository
     {
         List<User> GetUsers();
+        bool EditUser(User user);
+        User GetById(Guid id);
     }
 }
