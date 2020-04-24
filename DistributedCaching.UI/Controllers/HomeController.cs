@@ -39,6 +39,9 @@ namespace DistributedCaching.UI.Controllers
         public IActionResult EditUser(User user)
         {
             user.Id =Guid.Parse("0e45873d-3da2-4775-8cb5-08d7e850c7c4");
+            // update database
+            _userRepository.EditUser(user);
+
             //update cache
             IList<User> cachedUsers;
             List<User> usersList = new List<User>();
@@ -66,8 +69,7 @@ namespace DistributedCaching.UI.Controllers
             
                 _memoryCache.Set("users", usersList, cacheEntryOptions);
             }
-            // update database
-            _userRepository.EditUser(user);
+           
             return RedirectToAction("Index");
 
         }
